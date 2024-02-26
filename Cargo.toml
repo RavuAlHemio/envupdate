@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "envlist",
+    "envupdate",
+]
+resolver = "2"
