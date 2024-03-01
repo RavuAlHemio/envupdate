@@ -19,6 +19,13 @@ jobs:
           path: |
             target/debug/envlist.exe
             target/debug/envupdate.exe
+      - name: upload debug binary debug symbols
+        uses: actions/upload-artifact@v4
+        with:
+          name: envupdate-windows-debug-dbgsyms
+          path: |
+            target/debug/envlist.pdb
+            target/debug/envupdate.pdb
   build-windows-release:
     runs-on: windows-latest
     steps:
@@ -37,3 +44,10 @@ jobs:
           path: |
             target/release/envlist.exe
             target/release/envupdate.exe
+      - name: upload release binary debug symbols
+        uses: actions/upload-artifact@v4
+        with:
+          name: envupdate-windows-release-dbgsyms
+          path: |
+            target/release/envlist.pdb
+            target/release/envupdate.pdb
