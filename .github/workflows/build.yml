@@ -1,0 +1,39 @@
+name: Windows build
+on: [push]
+jobs:
+  build-windows-debug:
+    runs-on: windows-latest
+    steps:
+      - name: update Rust
+        run: rustup update
+      - name: check out repository code
+        uses: actions/checkout@v4
+      - name: debug build
+        run: cargo build
+      - name: run debug tests
+        run: cargo test
+      - name: upload debug binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: envupdate-windows-debug
+          path: |
+            target/debug/envlist.exe
+            target/debug/envupdate.exe
+  build-windows-release:
+    runs-on: windows-latest
+    steps:
+      - name: update Rust
+        run: rustup update
+      - name: check out repository code
+        uses: actions/checkout@v4
+      - name: release build
+        run: cargo build --release
+      - name: run release tests
+        run: cargo test --release
+      - name: upload debug binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: envupdate-windows-release
+          path: |
+            target/release/envlist.exe
+            target/release/envupdate.exe
