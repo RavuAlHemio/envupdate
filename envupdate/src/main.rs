@@ -1,5 +1,3 @@
-use std::sync::{Mutex, OnceLock};
-
 use windows::core::w;
 use windows::Win32::Foundation::{BOOL, HWND, LPARAM, TRUE, WPARAM};
 use windows::Win32::UI::WindowsAndMessaging::{
@@ -7,14 +5,9 @@ use windows::Win32::UI::WindowsAndMessaging::{
 };
 
 
-static WINDOW_LIST: OnceLock<Mutex<Vec<HWND>>> = OnceLock::new();
-
-
-unsafe extern "system" fn window_callback(window: HWND, _parameter: LPARAM) -> BOOL {
-    let mut list_guard = WINDOW_LIST
-        .get().expect("WINDOW_LIST not set?!")
-        .lock().expect("WINDOW_LIST poisoned?!");
-    list_guard.push(window);
+unsafe extern "system" fn window_callback(window: HWND, parameter: LPARAM) -> BOOL {
+    let window_list = parameter.0 as *mut Vec<HWND>;
+    (*window_list).push(window);
 
     // continue enumerating
     TRUE
@@ -22,19 +15,15 @@ unsafe extern "system" fn window_callback(window: HWND, _parameter: LPARAM) -> B
 
 
 fn main() {
-    let window_list = Mutex::new(Vec::new());
-    WINDOW_LIST.set(window_list)
-        .expect("WINDOW_LIST already set?!");
+    let mut window_list: Vec<HWND> = Vec::new();
+    let window_list_ptr = &mut window_list as *mut Vec<HWND> as isize;
 
-    let enum_result = unsafe { EnumWindows(Some(window_callback), LPARAM(0)) };
+    let enum_result = unsafe { EnumWindows(Some(window_callback), LPARAM(window_list_ptr)) };
     enum_result.expect("failed to enumerate windows");
 
-    let window_list_guard = WINDOW_LIST
-        .get().expect("WINDOW_LIST not set?!")
-        .lock().expect("WINDOW_LIST poisoned?!");
     let env_string = w!("Environment");
     let env_string_lparam = LPARAM(env_string.0 as isize);
-    for window in &*window_list_guard {
+    for window in &window_list {
         let mut message_result = 0;
         let send_result = unsafe {
             SendMessageTimeoutW(
@@ -49,9 +38,9 @@ fn main() {
         };
         if send_result.0 == 0 {
             let io_error = std::io::Error::last_os_error();
-            println!("window 0x{:X}: send result 0x{:X}, message result {}, error {}", window.0, send_result.0, message_result, io_error);
+            println!("window 0x{:X}: send result 0x{:X}, message result {}, error {}", window.0 as usize, send_result.0, message_result, io_error);
         } else {
-            println!("window 0x{:X}: send result 0x{:X}, message result {}", window.0, send_result.0, message_result);
+            println!("window 0x{:X}: send result 0x{:X}, message result {}", window.0 as usize, send_result.0, message_result);
         }
     }
 }
